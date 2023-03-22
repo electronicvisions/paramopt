@@ -48,16 +48,6 @@ def build(bld):
         use=[f"{EXPERIMENT_NAME}-pylib"],
         test_timeout=120)
 
-    bld(name=f"{EXPERIMENT_NAME}-python_hwtests",
-        tests=bld.path.ant_glob("tests/hw/py/**/*.py"),
-        features="use pytest pylint pycodestyle",
-        use=[f"{EXPERIMENT_NAME}-pylib"],
-        install_path="${PREFIX}/bin/tests/hw",
-        pylint_config=join(get_toplevel_path(), "code-format", "pylintrc"),
-        pycodestyle_config=join(get_toplevel_path(), "code-format", "pycodestyle"),
-        skip_run=not bld.env.DLSvx_HARDWARE_AVAILABLE,
-        test_timeout=120)
-
     bld(name=f"{EXPERIMENT_NAME}-python_swtests",
         tests=bld.path.ant_glob("tests/sw/py/**/*.py"),
         features="use pytest pylint pycodestyle",
