@@ -31,13 +31,8 @@ def draw_samples(posteriors: List,
     samples = pd.DataFrame(samples, columns=columns)
 
     # meta data
+    samples.attrs.update(abc_samples.attrs)
     samples.attrs['posterior_idx'] = np.arange(len(posteriors))[posterior_idx]
-
-    samples.attrs['length'] = abc_samples.attrs['length']
-    samples.attrs['limits'] = abc_samples.attrs['limits']
-    samples.attrs['target_file'] = abc_samples.attrs['target_file']
-    samples.attrs['target'] = abc_samples.attrs['target']
-    samples.attrs['observation'] = abc_samples.attrs['observation']
 
     return samples
 
