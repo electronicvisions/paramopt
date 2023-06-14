@@ -18,3 +18,11 @@ if (!isTriggeredByGerrit()) {
 withCcache() {
 	wafDefaultPipeline(pipelineOptions)
 }
+
+// Archive plots from tests
+stage(name: "Archive Test Plots") {
+	runOnSlave(label: "frontend") {
+		archiveArtifacts(artifacts: 'paramopt/test_results/*',
+		                 allowEmptyArchive: true)
+	}
+}
