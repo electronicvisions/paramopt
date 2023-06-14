@@ -24,7 +24,7 @@ def draw_samples(posteriors: List,
     :param n_samples: Number of samples to draw from the posterior.
     :returns: DataFrame with samples drawn from posterior.
     '''
-    samples = posteriors[posterior_idx].sample((n_samples,)).numpy()
+    samples = posteriors[posterior_idx].sample((n_samples,)).cpu().numpy()
 
     columns = pd.MultiIndex.from_product(
         [['parameters'], abc_samples['parameters'].columns])
