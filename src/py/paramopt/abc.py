@@ -12,6 +12,8 @@ import numpy as np
 import torch
 
 from sbi.inference import SNPE, SNRE, MCABC, prepare_for_sbi, simulate_for_sbi
+from sbi.inference.posteriors.base_posterior import NeuralPosterior
+from sbi.utils import get_density_thresholder, RestrictedPrior
 
 
 class Algorithm(Enum):
@@ -25,6 +27,96 @@ algorithms = {Algorithm.SNPE: SNPE,
               # Algorithm.SNLE: SNLE,
               Algorithm.SNRE: SNRE,
               Algorithm.MCABC: MCABC}
+
+
+class SequentialEstimation:
+    '''
+    Perform sequential estimation.
+    '''
+    def __init__(self,
+                 algorithm: Algorithm,
+                 prior: torch.distributions.Distribution,
+                 simulator: Callable, *,
+                 target: torch.Tensor,
+                 density_estimator: Optional[Union[str, Callable]] = None):
+        '''
+        :param algorithm: Sequential algorithm to use.
+        :param prior: Prior distribution.
+        :param simulator: Simulator mapping parameters to results.
+        :param target: Target observation.
+        :param density_estimator: Density estimator network to use as an
+            estimaton for the posterior.
+        '''
+        self._algorithm = algorithm
+        self._prior = prior
+        self._target = target
+        self._truncated_proposal = False
+        self._quantile = 1e-4
+        self._proposal_samples = 100_000
+
+        # Prepare inference; start with prior as proposal
+        self._simulator, self._proposal = prepare_for_sbi(simulator, prior)
+
+        if algorithm == Algorithm.SNRE:
+            self.inference = algorithms[algorithm](prior=prior)
+        else:
+            self.inference = \
+                algorithms[algorithm](prior=prior,
+                                      density_estimator=density_estimator)
+
+    def use_truncated_proposal(
+            self, quantile: Optional[float] = None,
+            num_samples_to_estimate_support: Optional[int] = None) -> None:
+        '''
+        Use truncated proposals.
+
+        Draw samples from the prior and reject if not in support of estimated
+        posterior.
+
+        :param quantile: Samples within the `1-quantile` high-probability
+            region of the posterior are accepted.
+        :param num_samples_to_estimate_support: Number of samples drawn from
+            the approximated posterior to estimate its support.
+        '''
+        self._truncated_proposal = True
+        if quantile is not None:
+            self._quantile = quantile
+        if num_samples_to_estimate_support is not None:
+            self._proposal_samples = num_samples_to_estimate_support
+
+    def next_round(self, n_sim: int = 1000
+                   ) -> Tuple[NeuralPosterior, torch.Tensor, torch.Tensor]:
+        '''
+        Perform next approximation round.
+
+        :param n_sim: Number of simulations to run.
+        :return: Approximated posterior, drawn samples, observations.
+        '''
+        theta, obs = simulate_for_sbi(self._simulator,
+                                      self._proposal,
+                                      num_simulations=n_sim)
+
+        kwargs = {'proposal': self._proposal} if \
+            self._algorithm == Algorithm.SNPE else {}
+        self.inference.append_simulations(theta, obs, **kwargs)
+
+        kwargs = {'force_first_round_loss': True} if \
+            self._truncated_proposal is None else {}
+        self.inference.train(**kwargs)
+
+        posterior = self.inference.build_posterior()
+
+        if self._truncated_proposal is None:
+            accept_reject_fn = get_density_thresholder(
+                posterior.set_default_x(self._target),
+                quantile=self._quantile,
+                num_samples_to_estimate_support=self._proposal_samples)
+            self._proposal = RestrictedPrior(self._prior, accept_reject_fn,
+                                             sample_with="rejection")
+        else:
+            self._proposal = posterior.set_default_x(self._target)
+
+        return posterior, theta, obs
 
 
 def perform_sequential_estimation(
@@ -49,38 +141,25 @@ def perform_sequential_estimation(
     :param density_estimator: Neural density estimator for the SNPE algorithm.
     :returns: Tuple of array with sample information and List of posteriors for
         each round. The array contains the proposal samples drawn in each
-        round, the observations and the corresponding round.
+        round, the observations (if `log_observations` is True) and the
+        corresponding round.
     '''
     if simulations is None:
         simulations = [1000] * 10
 
-    # Prepare inference
-    simulator, proposal = prepare_for_sbi(simulator, proposal)
-
-    if algorithm == Algorithm.SNRE:
-        inference = algorithms[algorithm](prior=proposal)
-    else:
-        inference = algorithms[algorithm](prior=proposal,
-                                          density_estimator=density_estimator)
+    seq_estimator = SequentialEstimation(algorithm, proposal, simulator,
+                                         target=target,
+                                         density_estimator=density_estimator)
 
     logs = []
     posteriors = []
     # Perform inference
     for curr_round, n_simulations in enumerate(simulations):
-        theta, obs = simulate_for_sbi(simulator, proposal,
-                                      num_simulations=n_simulations)
+        posterior, theta, obs = seq_estimator.next_round(n_simulations)
 
         logs.append(
             np.hstack([theta, obs, np.full((len(obs), 1), curr_round)]))
-
-        if algorithm == Algorithm.SNPE:
-            inference.append_simulations(theta, obs, proposal=proposal).train()
-        else:
-            inference.append_simulations(theta, obs).train()
-
-        posterior = inference.build_posterior()
         posteriors.append(posterior)
-        proposal = posterior.set_default_x(target)
 
     return np.concatenate(logs), posteriors
 
