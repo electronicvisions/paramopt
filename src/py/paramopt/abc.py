@@ -1,5 +1,5 @@
 '''
-Approximated Bayesian Computuation
+Approximated Bayesian Computation
 
 Collect functions which are related to perform approximated Bayesian
 computation for an experiment. The algorithms include sequential neural
