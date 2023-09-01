@@ -9,7 +9,7 @@ from paramopt.helper import concat_dfs
 
 
 def draw_samples(posteriors: List,
-                 abc_samples: pd.DataFrame,
+                 sbi_samples: pd.DataFrame,
                  posterior_idx: int = -1,
                  n_samples: int = 10000):
     '''
@@ -17,7 +17,7 @@ def draw_samples(posteriors: List,
 
     :param posteriors: List of approximated posteriors. From which samples can
         be drawn.
-    :param abc_samples: DataFrame which contains samples drawn during ABC.
+    :param sbi_samples: DataFrame which contains samples drawn during ABC.
         The meta data such as parameter names are extracted from this
         DataFrame.
     :param posterior_idx: Index of posterior from which to draw the samples.
@@ -27,11 +27,11 @@ def draw_samples(posteriors: List,
     samples = posteriors[posterior_idx].sample((n_samples,)).cpu().numpy()
 
     columns = pd.MultiIndex.from_product(
-        [['parameters'], abc_samples['parameters'].columns])
+        [['parameters'], sbi_samples['parameters'].columns])
     samples = pd.DataFrame(samples, columns=columns)
 
     # meta data
-    samples.attrs.update(abc_samples.attrs)
+    samples.attrs.update(sbi_samples.attrs)
     samples.attrs['posterior_idx'] = np.arange(len(posteriors))[posterior_idx]
 
     return samples
@@ -49,10 +49,10 @@ if __name__ == '__main__':
     parser.add_argument("posterior_file",
                         type=str,
                         help="Path to pickled file with list of posteriors.")
-    parser.add_argument("abc_samples_file",
+    parser.add_argument("sbi_samples_file",
                         type=str,
                         help="Path to pickled DataFrame which contains "
-                             "samples drawn during ABC. The meta data such as "
+                             "samples drawn during SBI. The meta data such as "
                              "parameter names are extracted from this file.")
     parser.add_argument("-n_samples",
                         type=int,
@@ -69,12 +69,12 @@ if __name__ == '__main__':
         approx_posteriors = pickle.load(handle)
 
     new_df = draw_samples(approx_posteriors,
-                          pd.read_pickle(args.abc_samples_file),
+                          pd.read_pickle(args.sbi_samples_file),
                           args.index_posterior,
                           n_samples=args.n_samples)
     new_df.attrs['posterior_file'] = str(Path(args.posterior_file).resolve())
-    new_df.attrs['abc_samples_file'] = \
-        str(Path(args.abc_samples_file).resolve())
+    new_df.attrs['sbi_samples_file'] = \
+        str(Path(args.sbi_samples_file).resolve())
 
     out_file = Path(f'posterior_samples_{new_df.attrs["posterior_idx"]}.pkl')
     if out_file.exists():

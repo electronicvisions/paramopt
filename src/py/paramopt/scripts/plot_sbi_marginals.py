@@ -58,4 +58,4 @@ if __name__ == '__main__':
     figure = main(
         [pd.read_pickle(pos_file) for pos_file in args.posterior_files],
         labels=args.labels)
-    figure.savefig('abc_marginals.svg')
+    figure.savefig('sbi_marginals.svg')

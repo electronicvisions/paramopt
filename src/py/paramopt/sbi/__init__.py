@@ -1,9 +1,9 @@
 '''
-Approximated Bayesian Computation
+Simulation-based Inference
 
-Collect functions which are related to perform approximated Bayesian
-computation for an experiment. The algorithms include sequential neural
-estimator algorithms (SNxE) as well as  Monte-Carlo ABC (MCABC).
+Collect functions which are related to perform simulation-based inference
+for experiments. The algorithms include sequential neural estimator algorithms
+(SNxE) as well as  Monte-Carlo ABC (MCABC).
 '''
 from enum import Enum, auto
 from typing import Callable, List, Optional, Union, Tuple
