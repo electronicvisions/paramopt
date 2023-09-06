@@ -7,8 +7,10 @@ from typing import List, Optional
 import pandas as pd
 import numpy as np
 
+from sbi.inference.posteriors.base_posterior import NeuralPosterior
 
-def sbc_data(posterior,
+
+def sbc_data(posterior: NeuralPosterior,
              observations: np.ndarray,
              num_sbc_samples: Optional[int] = None,
              num_samples: int = 1000,
@@ -68,13 +70,13 @@ def rank(item_to_rank: np.ndarray, samples: np.ndarray) -> np.ndarray:
         values in the second dimension, i.e., the second dimension should have
         the same length as `item_to_rank).
     '''
-    return (samples < item_to_rank).sum(1)
+    return (samples < item_to_rank).sum(0)
 
 
 def expected_coverage(original_parameters: np.ndarray,
                       observations: np.ndarray,
                       samples: np.ndarray,
-                      posterior, *,
+                      posterior: NeuralPosterior, *,
                       alphas: np.ndarray) -> np.ndarray:
     '''
     Calculate the expected coverage.
@@ -88,7 +90,9 @@ def expected_coverage(original_parameters: np.ndarray,
     :param observations: Observations of original parameters. With these
         observations samples from the posterior were drawn.
     :param samples: Posterior samples for the given observations. This array
-        has the shape (num_observations, num_sbc_samples, n_dim_parameter).
+        has the shape (num_observations, num_pos_samples, n_dim_parameter).
+        Where num_pos_samples is the number of samples drawn from each
+        posterior.
     :param posterior: Posterior for which to determine the expected coverage.
     :param alphas: Alpha at which the expected coverage is calculated.
     :return: Expected coverage for 1 - alpha.
@@ -99,11 +103,11 @@ def expected_coverage(original_parameters: np.ndarray,
     for parameter, obs, pos_samples in zip(original_parameters,
                                            observations,
                                            samples):
-        log_prob_original = log_unnormed(parameter, x=obs)
-        log_prob_samples = log_unnormed(pos_samples, x=obs)
+        log_prob_original = log_unnormed(parameter, x=obs).numpy()
+        log_prob_samples = log_unnormed(pos_samples, x=obs).numpy()
         ranks.append(rank(log_prob_original, log_prob_samples))
 
     norm_ranks = np.array(ranks) / samples.shape[1]
-    in_conv_region = norm_ranks > alphas
+    in_conv_region = norm_ranks[:, None] > alphas
 
     return in_conv_region.sum(0) / original_parameters.shape[0]
