@@ -58,11 +58,13 @@ class SequentialEstimation:
         self._simulator, self._proposal = prepare_for_sbi(simulator, prior)
 
         if algorithm == Algorithm.SNRE:
-            self.inference = algorithms[algorithm](prior=prior)
+            self.inference = algorithms[algorithm](
+                prior=prior, device=str(prior.variance.device))
         else:
             self.inference = \
                 algorithms[algorithm](prior=prior,
-                                      density_estimator=density_estimator)
+                                      density_estimator=density_estimator,
+                                      device=str(prior.variance.device))
 
     def use_truncated_proposal(
             self, quantile: Optional[float] = None,
