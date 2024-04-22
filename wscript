@@ -24,7 +24,7 @@ def configure(conf):
 
 
 def build(bld):
-    bld.env.DLSvx_HARDWARE_AVAILABLE = "SLURM_HWDB_YAML" in os.environ
+    bld.env.BBS_HARDWARE_AVAILABLE = "SLURM_HWDB_YAML" in os.environ
 
     bld(name=f"{EXPERIMENT_NAME}-pylib",
         features="py use pylint pycodestyle",
