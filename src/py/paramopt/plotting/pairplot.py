@@ -220,10 +220,9 @@ def _style_pairplot(axes: np.ndarray):
         return
     for row, row_axes in enumerate(axes[1:, :-1]):
         for col, ax in enumerate(row_axes):
-            if row > col:
-                continue
-            ax.set_xticklabels([])
-            ax.set_yticklabels([])
+            if col > row:
+                ax.set_xticklabels([])
+                ax.set_yticklabels([])
 
 
 def pairplot(axes: np.ndarray,
