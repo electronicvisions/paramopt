@@ -163,12 +163,18 @@ def _mark_targets(axes: np.ndarray, targets: List[float], **kwargs):
     :pram axes: Grid of all axes.
     :pram target: Targets for the differnt parameters.
     '''
+
+    # in the columns the first axis starts with the first parameter and
+    # continue to the second to last. In the rows, we start with the last
+    # and then continue with the first till the third to last parameter
+    # -> roll row parameters by one
+    row_targets = np.roll(targets, 1)
     # first row
-    for ax, target in zip(axes[0, :-1], targets[1:]):
+    for ax, target in zip(axes[0, :-1], targets[:-1]):
         ax.axvline(target, **kwargs)
 
     # right column
-    for ax, target in zip(axes[1:, -1], targets[:-1]):
+    for ax, target in zip(axes[1:, -1], row_targets[:-1]):
         ax.axhline(target, **kwargs)
 
     # just look at lower left quadrant with pariplots
@@ -177,11 +183,9 @@ def _mark_targets(axes: np.ndarray, targets: List[float], **kwargs):
             if row > column:
                 # no pairplots in lower left triangular space
                 continue
-            column_param = column
-            row_param = np.roll(np.arange(len(targets)), 1)[row]
 
-            ax.axvline(targets[column_param], **kwargs)
-            ax.axhline(targets[row_param], **kwargs)
+            ax.axvline(targets[column], **kwargs)
+            ax.axhline(row_targets[row], **kwargs)
 
 
 def _style_pairplot(axes: np.ndarray):
