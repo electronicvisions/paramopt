@@ -101,12 +101,12 @@ class SequentialEstimation:
         self.inference.append_simulations(theta, obs, **kwargs)
 
         kwargs = {'force_first_round_loss': True} if \
-            self._truncated_proposal is None else {}
+            self._truncated_proposal else {}
         self.inference.train(**kwargs)
 
         posterior = self.inference.build_posterior()
 
-        if self._truncated_proposal is None:
+        if self._truncated_proposal:
             accept_reject_fn = get_density_thresholder(
                 posterior.set_default_x(self._target),
                 quantile=self._quantile,
