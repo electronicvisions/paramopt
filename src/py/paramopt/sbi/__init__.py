@@ -99,6 +99,27 @@ class SequentialEstimation:
         theta, obs = simulate_for_sbi(self._simulator,
                                       self._proposal,
                                       num_simulations=n_sim)
+        posterior = self.add_simulations(theta=theta, obs=obs)
+        return posterior, theta, obs
+
+    def add_simulations(self,
+                        theta: torch.Tensor,
+                        obs: torch.Tensor) -> NeuralPosterior:
+        '''
+        Add the given observations to the inference and update the
+        posterior.
+
+        In order for this to work, the parameters have to be sampled
+        from the proposal. This is the prior in the first round and
+        the last approximation of the posterior in all subsequent
+        rounds.
+
+        :param theta: Parameters with which the observations were
+            generated. They have to be in the same order as returned
+            by the proposal/prior.
+        :param obs: Observations to append to the inference.
+        :return: Approximated posterior.
+        '''
 
         kwargs = {'proposal': self._proposal} if \
             self._algorithm == Algorithm.SNPE else {}
@@ -120,7 +141,7 @@ class SequentialEstimation:
         else:
             self._proposal = posterior.set_default_x(self._target)
 
-        return posterior, theta, obs
+        return posterior
 
 
 def perform_sequential_estimation(
