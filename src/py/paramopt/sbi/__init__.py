@@ -11,8 +11,10 @@ from typing import Callable, List, Optional, Union, Tuple
 import numpy as np
 import torch
 
-from sbi.inference import SNPE, SNRE, MCABC, prepare_for_sbi, simulate_for_sbi
+from sbi.inference import SNPE, SNRE, MCABC
 from sbi.inference.posteriors.base_posterior import NeuralPosterior
+from sbi.utils.user_input_checks import prepare_for_sbi
+from sbi.utils.simulation_utils import simulate_for_sbi
 from sbi.utils import get_density_thresholder, RestrictedPrior
 
 
