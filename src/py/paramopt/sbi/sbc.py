@@ -103,8 +103,8 @@ def expected_coverage(original_parameters: np.ndarray,
     for parameter, obs, pos_samples in zip(original_parameters,
                                            observations,
                                            samples):
-        log_prob_original = log_unnormed(parameter, x=obs).numpy()
-        log_prob_samples = log_unnormed(pos_samples, x=obs).numpy()
+        log_prob_original = log_unnormed(parameter, x=obs).cpu().numpy()
+        log_prob_samples = log_unnormed(pos_samples, x=obs).cpu().numpy()
         ranks.append(rank(log_prob_original, log_prob_samples))
 
     norm_ranks = np.array(ranks) / samples.shape[1]
