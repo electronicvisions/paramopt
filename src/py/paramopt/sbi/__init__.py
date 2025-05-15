@@ -6,7 +6,7 @@ for experiments. The algorithms include sequential neural estimator algorithms
 (SNxE) as well as  Monte-Carlo ABC (MCABC).
 '''
 from enum import Enum, auto
-from typing import Callable, List, Optional, Union, Tuple
+from typing import Callable, Dict, List, Optional, Union, Tuple
 
 import numpy as np
 import torch
@@ -34,6 +34,11 @@ algorithms = {Algorithm.SNPE: SNPE,
 class SequentialEstimation:
     '''
     Perform sequential estimation.
+
+    :ivar inference: Inference object.
+    :ivar train_arguments: Arguments used during the training of
+        the inference object. Should be a dictionary with the
+        argument name and the value.
     '''
     def __init__(self,
                  algorithm: Algorithm,
@@ -67,6 +72,7 @@ class SequentialEstimation:
                 algorithms[algorithm](prior=prior,
                                       density_estimator=density_estimator,
                                       device=str(prior.variance.device))
+        self.train_arguments = {}
 
     def use_truncated_proposal(
             self, quantile: Optional[float] = None,
@@ -125,8 +131,10 @@ class SequentialEstimation:
             self._algorithm == Algorithm.SNPE else {}
         self.inference.append_simulations(theta, obs, **kwargs)
 
+
         kwargs = {'force_first_round_loss': True} if \
             self._truncated_proposal else {}
+        kwargs.update(self.train_arguments)
         self.inference.train(**kwargs)
 
         posterior = self.inference.build_posterior()
