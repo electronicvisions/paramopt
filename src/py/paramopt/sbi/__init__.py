@@ -151,6 +151,21 @@ class SequentialEstimation:
 
         return posterior
 
+    def remove_simulations(self, n_round: int) -> None:
+        '''
+        Drop samples from the training process of the neural density
+        estimator.
+
+        :param n_round: Round for which to drop the samples.
+        '''
+        if not n_round in self.inference._data_round_index:
+            raise ValueError("Invalid round. There is no data for "
+                             f"round {n_round}.")
+        index = self.inference._data_round_index.index(n_round)
+        self.inference._prior_masks[index] = torch.tensor()
+        self.inference._theta_roundwise[index] = torch.tensor()
+        self.inference._prior_x_roundwise[index] = torch.tensor()
+
 
 def perform_sequential_estimation(
     algorithm: Algorithm,
