@@ -131,7 +131,6 @@ class SequentialEstimation:
             self._algorithm == Algorithm.SNPE else {}
         self.inference.append_simulations(theta, obs, **kwargs)
 
-
         kwargs = {'force_first_round_loss': True} if \
             self._truncated_proposal else {}
         kwargs.update(self.train_arguments)
@@ -158,7 +157,8 @@ class SequentialEstimation:
 
         :param n_round: Round for which to drop the samples.
         '''
-        if not n_round in self.inference._data_round_index:
+        # pylint: disable=protected-access
+        if n_round not in self.inference._data_round_index:
             raise ValueError("Invalid round. There is no data for "
                              f"round {n_round}.")
         index = self.inference._data_round_index.index(n_round)
