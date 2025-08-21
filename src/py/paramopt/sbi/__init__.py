@@ -13,7 +13,7 @@ import torch
 
 from sbi.inference import SNPE, SNRE, MCABC
 from sbi.inference.posteriors.base_posterior import NeuralPosterior
-from sbi.utils.user_input_checks import prepare_for_sbi
+from sbi.utils.user_input_checks import process_simulator, process_prior
 from sbi.utils.simulation_utils import simulate_for_sbi
 from sbi.utils import get_density_thresholder, RestrictedPrior
 
@@ -55,14 +55,16 @@ class SequentialEstimation:
             estimaton for the posterior.
         '''
         self._algorithm = algorithm
-        self._prior = prior
+        self._prior, _, prior_returns_numpy = process_prior(prior)
+        self._proposal = self._prior
         self._target = target
         self._truncated_proposal = False
         self._quantile = 1e-4
         self._proposal_samples = 100_000
 
         # Prepare inference; start with prior as proposal
-        self._simulator, self._proposal = prepare_for_sbi(simulator, prior)
+        self._simulator = process_simulator(simulator, prior,
+                                            prior_returns_numpy)
 
         if algorithm == Algorithm.SNRE:
             self.inference = algorithms[algorithm](
