@@ -1,6 +1,7 @@
 from typing import List, Optional
 import numpy as np
 import pandas as pd
+import torch
 
 
 class AttributeNotIdentical(Exception):
@@ -103,3 +104,20 @@ def get_parameter_limits(dfs: List[pd.DataFrame],
 
     n_param = np.where(dfs[0].columns == parameter_name)[0][0]
     return limits[n_param]
+
+
+def samples_in_bounds(samples: torch.Tensor,
+                      low: torch.Tensor,
+                      high: torch.Tensor) -> float:
+    """
+    Compute the fraction of samples lying within the inclusive bounds.
+
+    :param samples: Tensor of shape (N, D), the samples to check.
+    :param low: Tensor of shape (D), lower bounds (inclusive).
+    :param high: Tensor of shape (D), upper bounds (inclusive).
+    :return: Fraction of samples in [0, 1] within the bounds.
+    """
+    in_limits = (samples >= low[torch.newaxis, :]) \
+        & (samples <= high[torch.newaxis, :])
+    n_ok = int(torch.sum(torch.all(in_limits, dim=1)))
+    return n_ok / len(samples)
