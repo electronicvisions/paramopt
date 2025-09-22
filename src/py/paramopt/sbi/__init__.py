@@ -36,6 +36,8 @@ class SequentialEstimation:
     Perform sequential estimation.
 
     :ivar inference: Inference object.
+    :ivar proposal: Current proposal. Prior before first inference round,
+        afterwards the latest posterior.
     :ivar train_arguments: Arguments used during the training of
         the inference object. Should be a dictionary with the
         argument name and the value.
@@ -56,7 +58,7 @@ class SequentialEstimation:
         '''
         self._algorithm = algorithm
         self._prior, _, prior_returns_numpy = process_prior(prior)
-        self._proposal = self._prior
+        self.proposal = self._prior
         self._target = target
         self._truncated_proposal = False
         self._quantile = 1e-4
@@ -105,7 +107,7 @@ class SequentialEstimation:
         :return: Approximated posterior, drawn samples, observations.
         '''
         theta, obs = simulate_for_sbi(self._simulator,
-                                      self._proposal,
+                                      self.proposal,
                                       num_simulations=n_sim)
         posterior = self.add_simulations(theta=theta, obs=obs)
         return posterior, theta, obs
@@ -129,7 +131,7 @@ class SequentialEstimation:
         :return: Approximated posterior.
         '''
 
-        kwargs = {'proposal': self._proposal} if \
+        kwargs = {'proposal': self.proposal} if \
             self._algorithm == Algorithm.SNPE else {}
         self.inference.append_simulations(theta, obs, **kwargs)
 
@@ -145,10 +147,10 @@ class SequentialEstimation:
                 posterior.set_default_x(self._target),
                 quantile=self._quantile,
                 num_samples_to_estimate_support=self._proposal_samples)
-            self._proposal = RestrictedPrior(self._prior, accept_reject_fn,
-                                             sample_with="rejection")
+            self.proposal = RestrictedPrior(self._prior, accept_reject_fn,
+                                            sample_with="rejection")
         else:
-            self._proposal = posterior.set_default_x(self._target)
+            self.proposal = posterior.set_default_x(self._target)
 
         return posterior
 
