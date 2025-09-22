@@ -133,7 +133,9 @@ class SequentialEstimation:
 
         kwargs = {'proposal': self.proposal} if \
             self._algorithm == Algorithm.SNPE else {}
-        self.inference.append_simulations(theta, obs, **kwargs)
+        self.inference.append_simulations(theta,
+                                          obs.to(torch.float32),
+                                          **kwargs)
 
         kwargs = {'force_first_round_loss': True} if \
             self._truncated_proposal else {}
